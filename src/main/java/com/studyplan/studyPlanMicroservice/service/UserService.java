@@ -148,6 +148,14 @@ public class UserService {
     }
 
     @Transactional
+    public void updateLastLogin(Integer id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
+    }
+
+    @Transactional
     public void deleteUser(Integer id) {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("User not found: " + id);
@@ -204,6 +212,7 @@ public class UserService {
                 .dateRegister(user.getDateRegister())
                 .datePurchase(user.getDatePurchase())
                 .type(user.getType())
+                .lastLogin(user.getLastLogin())
                 .progress(progress)
                 .degreeName(degreeName)
                 .followersCount(followers)

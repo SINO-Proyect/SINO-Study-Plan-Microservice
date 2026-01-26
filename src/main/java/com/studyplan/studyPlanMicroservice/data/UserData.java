@@ -42,4 +42,7 @@ public class UserData {
 
     @NotBlank(message = "Type is required")
     private String type;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime lastLogin;
 }

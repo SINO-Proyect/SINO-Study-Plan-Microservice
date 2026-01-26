@@ -43,7 +43,6 @@ public class CourseService {
                 .dscPeriod(data.getDscPeriod())
                 .typeCourse(data.getTypeCourse())
                 .numCredits(data.getNumCredits())
-                .requirement(data.isRequirement())
                 .description(data.getDescription())
                 .build();
 
@@ -56,8 +55,6 @@ public class CourseService {
     public List<CourseData> createCourseBatch(List<CourseData> coursesData) {
         // 1. Save all courses first
         List<Course> savedCourses = coursesData.stream().map(data -> {
-            // Check existence logic skipped for batch to speed up, or could use upsert. 
-            // Assuming clean batch for now.
              Course course = Course.builder()
                 .idStudyPlan(data.getIdStudyPlan())
                 .dscCode(data.getDscCode())
@@ -66,7 +63,6 @@ public class CourseService {
                 .dscPeriod(data.getDscPeriod())
                 .typeCourse(data.getTypeCourse())
                 .numCredits(data.getNumCredits())
-                .requirement(data.isRequirement())
                 .description(data.getDescription())
                 .build();
              return courseRepository.save(course);
@@ -76,19 +72,35 @@ public class CourseService {
         Map<String, Integer> codeToId = savedCourses.stream()
                 .collect(Collectors.toMap(Course::getDscCode, Course::getIdCourse));
 
-        // 3. Save Requirements
+        // 3. Save Requirements and Corequisites
         for (CourseData data : coursesData) {
-            if (data.getPrerequisites() != null && !data.getPrerequisites().isEmpty()) {
-                Integer courseId = codeToId.get(data.getDscCode());
-                if (courseId == null) continue;
+            Integer courseId = codeToId.get(data.getDscCode());
+            if (courseId == null) continue;
 
+            // Save Prerequisites
+            if (data.getPrerequisites() != null) {
                 for (String reqCode : data.getPrerequisites()) {
                     Integer reqId = codeToId.get(reqCode);
                     if (reqId != null) {
                         Requirement req = Requirement.builder()
                                 .idCourse(courseId)
                                 .idCourseRequirement(reqId)
-                                .typeRequirement("OBLIGATORY")
+                                .typeRequirement("PREREQUISITE")
+                                .build();
+                        requirementRepository.save(req);
+                    }
+                }
+            }
+
+            // Save Corequisites
+            if (data.getCorequisites() != null) {
+                for (String coreqCode : data.getCorequisites()) {
+                    Integer coreqId = codeToId.get(coreqCode);
+                    if (coreqId != null) {
+                        Requirement req = Requirement.builder()
+                                .idCourse(courseId)
+                                .idCourseRequirement(coreqId)
+                                .typeRequirement("COREQUISITE")
                                 .build();
                         requirementRepository.save(req);
                     }
@@ -141,7 +153,6 @@ public class CourseService {
         course.setDscPeriod(data.getDscPeriod());
         course.setTypeCourse(data.getTypeCourse());
         course.setNumCredits(data.getNumCredits());
-        course.setRequirement(data.isRequirement());
         course.setDescription(data.getDescription());
 
         Course updated = courseRepository.save(course);
@@ -167,7 +178,6 @@ public class CourseService {
                 .dscPeriod(course.getDscPeriod())
                 .typeCourse(course.getTypeCourse())
                 .numCredits(course.getNumCredits())
-                .requirement(course.isRequirement())
                 .description(course.getDescription())
                 .build();
     }

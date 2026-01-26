@@ -40,10 +40,8 @@ public class CourseData {
     @Min(0)
     private Integer numCredits;
 
-    @NotNull(message = "Requirement flag is required")
-    private boolean requirement;
-
     private String description;
 
     private java.util.List<String> prerequisites;
+    private java.util.List<String> corequisites;
 }

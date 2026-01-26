@@ -40,9 +40,6 @@ public class Course {
     @Column(name = "num_credits", nullable = false)
     private Integer numCredits;
 
-    @Column(name = "requirement", nullable = false)
-    private boolean requirement;
-
     @Column(name = "description", length = 500)
     private String description;
 }

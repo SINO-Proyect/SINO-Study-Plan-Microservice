@@ -90,6 +90,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(updated, "User updated"));
     }
 
+    @PostMapping("/{id}/last-login")
+    @Operation(summary = "Update last login timestamp")
+    public ResponseEntity<ApiResponse<Void>> updateLastLogin(@PathVariable Integer id) {
+        userService.updateLastLogin(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Last login updated"));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete user")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Integer id) {

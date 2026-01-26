@@ -42,4 +42,7 @@ public class User {
     // free o premium
     @Column(name = "type", nullable = false, length = 50)
     private String type;
+
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
 }
