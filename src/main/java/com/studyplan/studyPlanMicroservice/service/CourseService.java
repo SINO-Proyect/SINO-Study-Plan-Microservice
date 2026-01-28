@@ -161,7 +161,47 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
-    // ... (rest of methods)
+    @Transactional
+    public CourseData updateCourse(Integer id, CourseData data) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found: " + id));
+
+        // Check for duplicate course code if it changed
+        if (!course.getDscCode().equals(data.getDscCode()) && courseRepository.existsByDscCode(data.getDscCode())) {
+            throw new RuntimeException("Course code already exists: " + data.getDscCode());
+        }
+
+        course.setDscCode(data.getDscCode());
+        course.setDscName(data.getDscName());
+        course.setDscLevel(data.getDscLevel());
+        course.setDscPeriod(data.getDscPeriod());
+        course.setTypeCourse(data.getTypeCourse());
+        course.setNumCredits(data.getNumCredits());
+        course.setDescription(data.getDescription());
+        course.setIdStudyPlan(data.getIdStudyPlan());
+
+        Course saved = courseRepository.save(course);
+        
+        // Note: For simplicity, we are not updating requirements here as they involve complex logic 
+        // with other courses. Requirements are usually handled via batch upload or specific endpoints.
+        
+        return toData(saved);
+    }
+
+    @Transactional
+    public void deleteCourse(Integer id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found: " + id));
+        
+        // Delete related requirements
+        requirementRepository.deleteByIdCourse(id);
+        requirementRepository.deleteByIdCourseRequirement(id);
+        
+        courseRepository.delete(course);
+        
+        // Sync with student_courses
+        studentCourseService.syncPlanCoursesForAllUsers(course.getIdStudyPlan());
+    }
 
     private CourseData toData(Course course) {
         return toData(course, List.of(), Map.of());
