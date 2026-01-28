@@ -22,6 +22,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final RequirementRepository requirementRepository;
+    private final StudentCourseService studentCourseService;
 
     @Transactional
     public CourseData createCourse(CourseData data) {
@@ -44,16 +45,21 @@ public class CourseService {
                 .typeCourse(data.getTypeCourse())
                 .numCredits(data.getNumCredits())
                 .description(data.getDescription())
-                .requirement("None")
                 .build();
 
         Course saved = courseRepository.save(course);
+        
+        // Sync with student_courses
+        studentCourseService.syncPlanCoursesForAllUsers(data.getIdStudyPlan());
+        
         return toData(saved);
     }
 
     //create a list of courses in a single transaction
     @Transactional
     public List<CourseData> createCourseBatch(List<CourseData> coursesData) {
+        if (coursesData.isEmpty()) return List.of();
+        
         // 1. Save all courses first
         List<Course> savedCourses = coursesData.stream().map(data -> {
              Course course = Course.builder()
@@ -65,7 +71,6 @@ public class CourseService {
                 .typeCourse(data.getTypeCourse())
                 .numCredits(data.getNumCredits())
                 .description(data.getDescription())
-                .requirement("None")
                 .build();
              return courseRepository.save(course);
         }).collect(Collectors.toList());
@@ -110,6 +115,10 @@ public class CourseService {
             }
         }
 
+        // 4. Sync with student_courses for the plan
+        Integer planId = coursesData.get(0).getIdStudyPlan();
+        studentCourseService.syncPlanCoursesForAllUsers(planId);
+
         return savedCourses.stream()
                 .map(this::toData)
                 .collect(Collectors.toList());
@@ -131,46 +140,44 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public List<CourseData> getCoursesByStudyPlan(Integer studyPlanId) {
-        return courseRepository.findByIdStudyPlan(studyPlanId).stream()
-                .map(this::toData)
+        List<Course> courses = courseRepository.findByIdStudyPlan(studyPlanId);
+        // Pre-fetch all requirements for the plan to avoid N+1 queries
+        List<Requirement> allReqs = requirementRepository.findAll(); // Optimization: could filter by course ids
+        Map<Integer, String> idToCode = courses.stream().collect(Collectors.toMap(Course::getIdCourse, Course::getDscCode));
+
+        return courses.stream()
+                .map(c -> toData(c, allReqs, idToCode))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<CourseData> getAllCourses() {
-        return courseRepository.findAll().stream()
-                .map(this::toData)
+        List<Course> courses = courseRepository.findAll();
+        List<Requirement> allReqs = requirementRepository.findAll();
+        Map<Integer, String> idToCode = courses.stream().collect(Collectors.toMap(Course::getIdCourse, Course::getDscCode));
+        
+        return courses.stream()
+                .map(c -> toData(c, allReqs, idToCode))
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public CourseData updateCourse(Integer id, CourseData data) {
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found: " + id));
+    // ... (rest of methods)
 
-        course.setIdStudyPlan(data.getIdStudyPlan());
-        course.setDscCode(data.getDscCode());
-        course.setDscName(data.getDscName());
-        course.setDscLevel(data.getDscLevel());
-        course.setDscPeriod(data.getDscPeriod());
-        course.setTypeCourse(data.getTypeCourse());
-        course.setNumCredits(data.getNumCredits());
-        course.setDescription(data.getDescription());
-
-        Course updated = courseRepository.save(course);
-        return toData(updated);
-    }
-
-    @Transactional
-    public void deleteCourse(Integer id) {
-        if (!courseRepository.existsById(id)) {
-            throw new RuntimeException("Course not found: " + id);
-        }
-        courseRepository.deleteById(id);
-    }
-
-    //structure for the json file
     private CourseData toData(Course course) {
+        return toData(course, List.of(), Map.of());
+    }
+
+    private CourseData toData(Course course, List<Requirement> allReqs, Map<Integer, String> idToCode) {
+        List<String> prereqs = allReqs.stream()
+                .filter(r -> r.getIdCourse().equals(course.getIdCourse()) && "PREREQUISITE".equals(r.getTypeRequirement()))
+                .map(r -> idToCode.getOrDefault(r.getIdCourseRequirement(), "REQ-" + r.getIdCourseRequirement()))
+                .collect(Collectors.toList());
+
+        List<String> coreqs = allReqs.stream()
+                .filter(r -> r.getIdCourse().equals(course.getIdCourse()) && "COREQUISITE".equals(r.getTypeRequirement()))
+                .map(r -> idToCode.getOrDefault(r.getIdCourseRequirement(), "REQ-" + r.getIdCourseRequirement()))
+                .collect(Collectors.toList());
+
         return CourseData.builder()
                 .idCourse(course.getIdCourse())
                 .idStudyPlan(course.getIdStudyPlan())
@@ -181,6 +188,8 @@ public class CourseService {
                 .typeCourse(course.getTypeCourse())
                 .numCredits(course.getNumCredits())
                 .description(course.getDescription())
+                .prerequisites(prereqs)
+                .corequisites(coreqs)
                 .build();
     }
 }

@@ -42,7 +42,4 @@ public class Course {
 
     @Column(name = "description", length = 500)
     private String description;
-
-    @Column(name = "requirement")
-    private String requirement;
 }

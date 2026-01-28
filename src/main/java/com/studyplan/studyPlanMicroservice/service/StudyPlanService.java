@@ -25,6 +25,7 @@ public class StudyPlanService {
 
     private final StudyPlanRepository studyPlanRepository;
     private final UserService userService;
+    private final StudentCourseService studentCourseService;
 
     @Transactional
     public StudyPlanData createStudyPlan(StudyPlanData data, String userEmail) {
@@ -37,6 +38,7 @@ public class StudyPlanService {
             if (existing != null) {
                 if (studyPlanRepository.existsRelationship(user.getIdUser(), existing.getIdStudyPlan()) == 0) {
                     studyPlanRepository.linkUserToPlan(user.getIdUser(), existing.getIdStudyPlan());
+                    studentCourseService.initializeStudentPlan(user.getIdUser(), existing.getIdStudyPlan());
                 }
                 return toData(existing);
             }
@@ -49,12 +51,14 @@ public class StudyPlanService {
                 .typePeriod(data.getTypePeriod())
                 .yearLevel(data.getYearLevel())
                 .status(data.getStatus())
+                .idCreator(user.getIdUser())
                 .build();
 
         StudyPlan saved = studyPlanRepository.save(studyPlan);
         
         // Link to user
         studyPlanRepository.linkUserToPlan(user.getIdUser(), saved.getIdStudyPlan());
+        studentCourseService.initializeStudentPlan(user.getIdUser(), saved.getIdStudyPlan());
         
         return toData(saved);
     }

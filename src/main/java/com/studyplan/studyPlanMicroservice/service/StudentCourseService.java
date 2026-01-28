@@ -19,6 +19,7 @@ public class StudentCourseService {
     private final CourseRepository courseRepository;
     private final StatusRepository statusRepository;
     private final RequirementRepository requirementRepository;
+    private final UserPlanRepository userPlanRepository;
 
     private static final int STATUS_AVAILABLE = 1;
     private static final int STATUS_IN_PROGRESS = 2;
@@ -30,6 +31,39 @@ public class StudentCourseService {
         return studentCourseRepository.findByUser_IdUser(userId).stream()
                 .map(this::toData)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void syncPlanCoursesForAllUsers(Integer planId) {
+        List<UserPlan> userPlans = userPlanRepository.findByIdStudyPlan(planId);
+        for (UserPlan up : userPlans) {
+            initializeStudentPlan(up.getIdUser(), planId);
+        }
+    }
+
+    @Transactional
+    public void recalculateAllStatuses(Integer userId) {
+        List<StudentCourse> userCourses = studentCourseRepository.findByUser_IdUser(userId);
+        Status available = statusRepository.findById(STATUS_AVAILABLE).orElseThrow();
+        Status locked = statusRepository.findById(STATUS_LOCKED).orElseThrow();
+
+        for (StudentCourse sc : userCourses) {
+            // Only update if it's currently LOCKED or AVAILABLE. 
+            // PASSED and IN_PROGRESS are manual states.
+            if (sc.getStatus().getIdStatus() == STATUS_LOCKED || sc.getStatus().getIdStatus() == STATUS_AVAILABLE) {
+                if (areAllRequirementsMet(userId, sc.getCourse().getIdCourse())) {
+                    if (sc.getStatus().getIdStatus() == STATUS_LOCKED) {
+                        sc.setStatus(available);
+                        studentCourseRepository.save(sc);
+                    }
+                } else {
+                    if (sc.getStatus().getIdStatus() == STATUS_AVAILABLE) {
+                        sc.setStatus(locked);
+                        studentCourseRepository.save(sc);
+                    }
+                }
+            }
+        }
     }
 
     @Transactional

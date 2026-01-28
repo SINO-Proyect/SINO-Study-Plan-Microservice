@@ -42,4 +42,11 @@ public class StudentCourseController {
         studentCourseService.initializeStudentPlan(userId, planId);
         return ResponseEntity.ok(ApiResponse.success(null, "Plan initialized successfully"));
     }
+
+    @PostMapping("/recalculate/{userId}")
+    @Operation(summary = "Recalculate all course statuses for a user based on prerequisites")
+    public ResponseEntity<ApiResponse<Void>> recalculateAllStatuses(@PathVariable Integer userId) {
+        studentCourseService.recalculateAllStatuses(userId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Statuses recalculated successfully"));
+    }
 }
