@@ -44,6 +44,7 @@ public class CourseService {
                 .typeCourse(data.getTypeCourse())
                 .numCredits(data.getNumCredits())
                 .description(data.getDescription())
+                .requirement("None")
                 .build();
 
         Course saved = courseRepository.save(course);
@@ -64,6 +65,7 @@ public class CourseService {
                 .typeCourse(data.getTypeCourse())
                 .numCredits(data.getNumCredits())
                 .description(data.getDescription())
+                .requirement("None")
                 .build();
              return courseRepository.save(course);
         }).collect(Collectors.toList());
