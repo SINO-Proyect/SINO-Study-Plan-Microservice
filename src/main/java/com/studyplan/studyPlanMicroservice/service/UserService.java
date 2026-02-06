@@ -182,7 +182,9 @@ public class UserService {
         String degreeName = null;
         
         // 1. Get Active Plan
-        UserPlan userPlan = userPlanRepository.findByIdUser(user.getIdUser()).orElse(null);
+        List<UserPlan> userPlans = userPlanRepository.findByIdUser(user.getIdUser());
+        UserPlan userPlan = userPlans.isEmpty() ? null : userPlans.get(0);
+        
         if (userPlan != null) {
             studyPlanRepository.findById(userPlan.getIdStudyPlan()).ifPresent(plan -> {
                  // degreeName = plan.getDscName(); // Cannot set local variable

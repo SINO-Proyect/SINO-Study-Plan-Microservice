@@ -36,4 +36,7 @@ public class StudyPlan {
 
     @Column(name = "status", nullable = false)
     private Boolean status;
+
+    @Column(name = "id_creator")
+    private Integer idCreator;
 }

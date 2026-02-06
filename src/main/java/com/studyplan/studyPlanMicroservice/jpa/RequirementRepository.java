@@ -10,4 +10,6 @@ import java.util.List;
 public interface RequirementRepository extends JpaRepository<Requirement, Integer> {
     List<Requirement> findByIdCourse(Integer idCourse);
     List<Requirement> findByIdCourseRequirement(Integer idCourseRequirement);
+    void deleteByIdCourse(Integer idCourse);
+    void deleteByIdCourseRequirement(Integer idCourseRequirement);
 }
