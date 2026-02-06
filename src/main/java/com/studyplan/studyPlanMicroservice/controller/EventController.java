@@ -3,6 +3,7 @@ package com.studyplan.studyPlanMicroservice.controller;
 import com.studyplan.studyPlanMicroservice.data.ApiResponse;
 import com.studyplan.studyPlanMicroservice.data.EventData;
 import com.studyplan.studyPlanMicroservice.service.EventService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,8 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/events")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class EventController {
 
     @Autowired

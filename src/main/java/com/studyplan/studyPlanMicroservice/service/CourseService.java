@@ -30,14 +30,17 @@ public class CourseService {
             throw new RuntimeException("Study plan not found: " + data.getIdStudyPlan());
         }
 
+        // Normalize course code (trim spaces)
+        String normalizedCode = data.getDscCode().trim();
+
         // Check for duplicate course code
-        if (courseRepository.existsByDscCode(data.getDscCode())) {
-            throw new RuntimeException("Course code already exists: " + data.getDscCode());
+        if (courseRepository.existsByDscCode(normalizedCode)) {
+            throw new RuntimeException("Course code already exists: " + normalizedCode);
         }
 
         Course course = Course.builder()
                 .idStudyPlan(data.getIdStudyPlan())
-                .dscCode(data.getDscCode())
+                .dscCode(normalizedCode)  // ← Guarda sin espacios
                 .dscName(data.getDscName())
                 .dscLevel(data.getDscLevel())
                 .dscPeriod(data.getDscPeriod())
@@ -47,6 +50,10 @@ public class CourseService {
                 .build();
 
         Course saved = courseRepository.save(course);
+
+        // Sync with student_courses
+        studentCourseService.syncPlanCoursesForAllUsers(data.getIdStudyPlan());
+
         return toData(saved);
     }
 
@@ -122,8 +129,10 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public CourseData getCourseByCode(String code) {
-        Course course = courseRepository.findByDscCode(code)
-                .orElseThrow(() -> new RuntimeException("Course not found: " + code));
+        Course course = courseRepository.findByDscCode(code.trim()).orElse(null);
+        if (course == null) {
+            return null;
+        }
         return toData(course);
     }
 
