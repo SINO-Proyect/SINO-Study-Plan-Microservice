@@ -10,6 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface UserPlanRepository extends JpaRepository<UserPlan, UserPlanId> {
-    Optional<UserPlan> findByIdUser(Integer idUser); // Assuming one plan per user for now or pick first
+    List<UserPlan> findByIdUser(Integer idUser); 
     List<UserPlan> findByIdStudyPlan(Integer idStudyPlan);
 }
