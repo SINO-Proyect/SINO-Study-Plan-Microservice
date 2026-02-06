@@ -42,5 +42,5 @@ public class Event {
     private String typeEvent;
 
     @Column(name = "status", length = 45)
-    private String status = "Pending";
+    private String status = "PENDING";
 }

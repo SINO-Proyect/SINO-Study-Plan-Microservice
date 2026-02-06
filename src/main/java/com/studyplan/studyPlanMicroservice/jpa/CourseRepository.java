@@ -13,6 +13,7 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
 
     List<Course> findByIdStudyPlan(Integer studyPlanId);
 
+    @Query("SELECT c FROM Course c WHERE TRIM(c.dscCode) = TRIM(:courseCode)")
     Optional<Course> findByDscCode(String courseCode);
 
     List<Course> findByDscLevel(String level);
@@ -22,6 +23,7 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
     @Query("SELECT c FROM Course c WHERE c.idStudyPlan = :studyPlanId AND c.dscLevel = :level AND c.dscPeriod = :period")
     List<Course> findByStudyPlanAndLevelAndPeriod(Integer studyPlanId, String level, String period);
 
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Course c WHERE TRIM(c.dscCode) = TRIM(:courseCode)")
     boolean existsByDscCode(String courseCode);
 
     long countByIdStudyPlan(Integer idStudyPlan);

@@ -52,6 +52,10 @@ public class CourseController {
     @Operation(summary = "Get course by code")
     public ResponseEntity<ApiResponse<CourseData>> getCourseByCode(@PathVariable String code) {
         CourseData course = courseService.getCourseByCode(code);
+        if (course == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                               .body(ApiResponse.error("Course not found: " + code));
+        }
         return ResponseEntity.ok(ApiResponse.success(course, "Course retrieved"));
     }
 

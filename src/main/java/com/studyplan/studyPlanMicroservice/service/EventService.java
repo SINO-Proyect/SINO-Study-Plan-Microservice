@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional; // Import Optional
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,15 +18,34 @@ public class EventService {
     private EventRepository eventRepository;
 
     public EventData createEvent(EventData eventData) {
-        if (eventData.getDscTitle() == null || eventData.getDscTitle().isBlank()) {
+
+        // Validaciones básicas con TRIM
+        if (eventData.getDscTitle() == null || eventData.getDscTitle().trim().isBlank()) {
             throw new IllegalArgumentException("Title cannot be null or blank");
         }
-        if (eventData.getIdUser() == null || eventData.getIdCourse() == null || eventData.getEventDate() == null || eventData.getTypeEvent() == null || eventData.getTypeEvent().isBlank()) {
-            throw new IllegalArgumentException("User ID, Course ID, Event Date and Event Type cannot be null or blank");
+
+        if (eventData.getIdUser() == null ||
+                eventData.getIdCourse() == null ||
+                eventData.getEventDate() == null ||
+                eventData.getTypeEvent() == null ||
+                eventData.getTypeEvent().trim().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "User ID, Course ID, Event Date and Event Type cannot be null or blank"
+            );
         }
+
         Event event = new Event();
         BeanUtils.copyProperties(eventData, event);
+
+        // Limpia los espacios antes de guardar
+        event.setDscTitle(eventData.getDscTitle().trim());
+        event.setDscDescription(eventData.getDscDescription() != null ? eventData.getDscDescription().trim() : null);
+        event.setTypeEvent(eventData.getTypeEvent().trim());
+        event.setStatus("PENDING");
+
         event = eventRepository.save(event);
+
         BeanUtils.copyProperties(event, eventData);
         return eventData;
     }
@@ -61,32 +80,44 @@ public class EventService {
     }
 
     public Optional<EventData> updateEvent(Integer eventId, EventData eventData) {
-        // Find existing event
+
         Optional<Event> existingEventOptional = eventRepository.findById(eventId);
 
         if (existingEventOptional.isEmpty()) {
-            return Optional.empty(); // Event not found
+            return Optional.empty();
         }
 
         Event existingEvent = existingEventOptional.get();
 
-        // Basic validation
-        if (eventData.getDscTitle() == null || eventData.getDscTitle().isBlank()) {
+        // Validaciones para actualización con TRIM
+        if (eventData.getDscTitle() == null || eventData.getDscTitle().trim().isBlank()) {
             throw new IllegalArgumentException("Title cannot be null or blank");
         }
-        if (eventData.getIdUser() == null || eventData.getIdCourse() == null || eventData.getEventDate() == null || eventData.getTypeEvent() == null || eventData.getTypeEvent().isBlank()) {
-            throw new IllegalArgumentException("User ID, Course ID, Event Date and Event Type cannot be null or blank");
+
+        if (eventData.getIdUser() == null ||
+                eventData.getIdCourse() == null ||
+                eventData.getEventDate() == null ||
+                eventData.getTypeEvent() == null ||
+                eventData.getTypeEvent().trim().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "User ID, Course ID, Event Date and Event Type cannot be null or blank"
+            );
         }
 
-        // Update mutable properties. ID_events should not be updated from DTO
+        // Campos editables con TRIM
         existingEvent.setIdUser(eventData.getIdUser());
         existingEvent.setIdCourse(eventData.getIdCourse());
-        existingEvent.setDscTitle(eventData.getDscTitle());
-        existingEvent.setDscDescription(eventData.getDscDescription());
+        existingEvent.setDscTitle(eventData.getDscTitle().trim());
+        existingEvent.setDscDescription(eventData.getDscDescription() != null ? eventData.getDscDescription().trim() : null);
         existingEvent.setEventDate(eventData.getEventDate());
         existingEvent.setEventTime(eventData.getEventTime());
-        existingEvent.setTypeEvent(eventData.getTypeEvent());
-        existingEvent.setStatus(eventData.getStatus());
+        existingEvent.setTypeEvent(eventData.getTypeEvent().trim());
+
+        // Status SOLO se cambia en update
+        if (eventData.getStatus() != null && !eventData.getStatus().trim().isBlank()) {
+            existingEvent.setStatus(eventData.getStatus().trim());
+        }
 
         Event updatedEvent = eventRepository.save(existingEvent);
 
